@@ -92,7 +92,7 @@ if __name__ == "__main__":
                 print ('Something went wrong reading ' + args.subsetconfig)            
     else:
         # DEFAULT
-        subsetconfig = { 'subset': {'depth': {'min': 0, 'max': 5}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99 + 360, 'max': -75 + 360}, 'variables': ['water_u', 'water_v'], 'output': 'fnmoc-amseas-forecast' }} 
+        subsetconfig = { 'subset': {'depth': {'min': 0, 'max': 5000}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99 + 360, 'max': -75 + 360}, 'variables': ['water_u', 'water_v'], 'output': 'fnmoc-amseas-forecast' }} 
 
     # La fecha del pronostico a descagar, por defecto usar la fecha actual.
     forecastDate = (dt.datetime.today() - dt.timedelta(days=1)).strftime("%Y%m%d")

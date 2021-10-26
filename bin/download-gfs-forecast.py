@@ -67,7 +67,7 @@ if __name__ == "__main__":
                 print ('Something went wrong reading ' + args.subsetconfig)            
     else:
         # DEFAULT
-        subsetconfig = { 'subset': {'depth': {'min': 0, 'max': 5}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99, 'max': -75}, 'variables': ['u_component_of_wind_height_above_ground', 'v_component_of_wind_height_above_ground'], 'output': 'fnmoc-amseas-forecast' }} 
+        subsetconfig = { 'subset': {'depth': {'min': 0, 'max': 10}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99, 'max': -75}, 'variables': ['u_component_of_wind_height_above_ground', 'v_component_of_wind_height_above_ground'], 'output': 'fnmoc-amseas-forecast' }} 
 
     forecastDate = (dt.datetime.today() - dt.timedelta(days=1)).strftime("%Y%m%d")
 
