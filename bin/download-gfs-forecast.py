@@ -36,9 +36,11 @@ def makeCFCompliant(dst):
                                                           
     dst.coords['lon'].attrs['axis'] = 'X'
     dst.coords['lon'].attrs['standard_name'] = 'longitude'
+    dst.coords['lon'].attrs['units'] = 'degrees_east'
 
     dst.coords['lat'].attrs['axis'] = 'Y'
     dst.coords['lat'].attrs['standard_name'] = 'latitude'
+    dst.coords['lat'].attrs['units'] = 'degrees_north'
 
     dst.coords['height_above_ground4'].attrs['axis'] = 'Z'
     dst.coords['height_above_ground4'].attrs['standard_name'] = 'depth'
@@ -67,7 +69,7 @@ if __name__ == "__main__":
                 print ('Something went wrong reading ' + args.subsetconfig)            
     else:
         # DEFAULT
-        subsetconfig = { 'subset': {'depth': {'min': 0, 'max': 10}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99, 'max': -75}, 'variables': ['u_component_of_wind_height_above_ground', 'v_component_of_wind_height_above_ground'], 'output': 'fnmoc-amseas-forecast' }} 
+        subsetconfig = { 'subset': {'height': {'min': 0, 'max': 20}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99, 'max': -75}, 'variables': ['u-component_of_wind_height_above_ground', 'v-component_of_wind_height_above_ground'], 'output': 'fnmoc-amseas-forecast' }} 
 
     forecastDate = (dt.datetime.today() - dt.timedelta(days=1)).strftime("%Y%m%d")
 
@@ -76,7 +78,8 @@ if __name__ == "__main__":
 
     # Subset definition
     heights = getNearestIdxSlice(subsetconfig['subset']['height']['min'], subsetconfig['subset']['height']['max'], remoteDataset.coords['height_above_ground4'].values) 
-    lats   = getNearestIdxSlice(subsetconfig['subset']['latitude']['min'], subsetconfig['subset']['latitude']['max'], remoteDataset.coords['lat'].values) 
+    print (heights)
+    lats   = getNearestIdxSlice(subsetconfig['subset']['latitude']['max'], subsetconfig['subset']['latitude']['min'], remoteDataset.coords['lat'].values) 
     lons   = getNearestIdxSlice(subsetconfig['subset']['longitude']['min'], subsetconfig['subset']['longitude']['max'], remoteDataset.coords['lon'].values)
     variables = subsetconfig['subset']['variables']
 

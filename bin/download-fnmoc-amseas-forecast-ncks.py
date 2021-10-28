@@ -6,6 +6,7 @@ import yaml
 import argparse
 import datetime as dt
 import netCDF4 as nc
+import xarray as xr
 import numpy as np
 from siphon.catalog import TDSCatalog
 from subprocess import Popen
@@ -29,7 +30,7 @@ def buildNCKSDownload(dapURL, subsetConfig, outfile):
     ncks -v surf_el -d time,0,0 -d lat,15.0,32.0 -d lon,262.0,285.0 https://www.ncei.noaa.gov/thredds-coastal/dodsC/amseas/amseas_20201218_to_current/20211022/coamps_ncom_amseas_u_1_2021102200_00${ix}0000.nc  out_ssh_${ix}.nc;
     '''
 
-    return [ "ncks", "-v", ",".join([ "{}".format(var) for var in subsetConfig['variables'] ]),
+    return [ "ncks", "-O", "-v", ",".join([ "{}".format(var) for var in subsetConfig['variables'] ]),
              '-d', "lat,{minY},{maxY}".format(maxY=subsetConfig['latitude']['max'], minY=subsetConfig['latitude']['min']),
              '-d', "lon,{minX},{maxX}".format(maxX=subsetConfig['longitude']['max'], minX=subsetConfig['longitude']['min']),
              '-d', "depth,{minX},{maxX}".format(maxX=subsetConfig['depth']['max'], minX=subsetConfig['depth']['min']),
@@ -56,24 +57,24 @@ def makeCFCompliant(ncFile):
     dst = nc.Dataset(ncFile,'a')
 
     # Cordenadas 
-    dst.coords['lon'] = dst.coords['lon'] - (180*2)   # Los datos de coordenadas para lon deben de ir de -180 a 0
-                                                      # en unidades degrees_east
-    dst.coords['lon'].attrs['axis'] = 'X'
-    dst.coords['lon'].attrs['units'] = 'degrees_east'
-    dst.coords['lon'].attrs['standard_name'] = 'longitude'
+    dst.variables['lon'][:] = dst.variables['lon'][:] - 360.0   # Los datos de coordenadas para lon deben de ir de -180 a 0
+                                                                # en unidades degrees_east
+    dst.variables['lon'].axis = 'X'
+    dst.variables['lon'].units = 'degrees_east'
+    dst.variables['lon'].standard_name = 'longitude'
 
-    dst.coords['lat'].attrs['axis'] = 'Y'
-    dst.coords['lat'].attrs['standard_name'] = 'latitude'
+    dst.variables['lat'].axis = 'Y'
+    dst.variables['lat'].standard_name = 'latitude'
 
-    dst.coords['depth'].attrs['axis'] = 'Z'
-    dst.coords['depth'].attrs['standard_name'] = 'depth'
+    dst.variables['depth'].axis = 'Z'
+    dst.variables['depth'].standard_name = 'depth'
 
-    dst.coords['time'].attrs['axis'] = 'T'
-    dst.coords['time'].attrs['standard_name'] = 'time'
+    dst.variables['time'].axis = 'T'
+    dst.variables['time'].standard_name = 'time'
 
     # Variables standard_names
-    dst.variables['water_u'].attrs['standard_name'] = 'x_sea_water_velocity'
-    dst.variables['water_v'].attrs['standard_name'] = 'y_sea_water_velocity'
+    dst.variables['water_u'].standard_name = 'x_sea_water_velocity'
+    dst.variables['water_v'].standard_name = 'y_sea_water_velocity'
 
     dst.close()
 
@@ -81,6 +82,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Parallel download for the FNMOC Amseas forecast', prog='download-fnmoc-amseas-forecast')
     parser.add_argument('--subset', '-s', action='store', dest='subsetconfig', help='yaml file with the subset to download.')
+    parser.add_argument('--commands', '-c', action='store_true', dest='show_commands', help='Just show the ncks commands to run')
 
     args = parser.parse_args()
     # TODO Add verbose mode
@@ -108,6 +110,11 @@ if __name__ == "__main__":
     outfiles = [ subsetconfig['subset']['output'] + '-' + forecastDate + '-time' + '{:02d}'.format(didx) + '.nc' for didx, dapURL in enumerate(durls) ] 
     ncksCommands = [ buildNCKSDownload(dapURL, subsetconfig['subset'], outfiles[didx] ) for didx, dapURL in enumerate(durls) ] 
 
+    if args.show_commands:
+        for cidx, c in enumerate(ncksCommands):
+            print ( str(cidx) + " : " + " ".join(c) )
+        sys.exit(0)
+
     concurrentDownloads=4 
 
     print("Number of downloads: " + str(len(ncksCommands)))
@@ -131,6 +138,6 @@ if __name__ == "__main__":
 
         # Make downloaded files, CF Compliant
         for pidx, p in enumerate(downloadProceses):
-            print("Making CF Compliant: " + outfiles[pidx])
-            makeCFCompliant(outfiles[pidx])
+            print("Making CF Compliant: " + outfiles[i+pidx])
+            makeCFCompliant(outfiles[i+pidx])
 
