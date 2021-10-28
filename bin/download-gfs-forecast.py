@@ -69,7 +69,7 @@ if __name__ == "__main__":
                 print ('Something went wrong reading ' + args.subsetconfig)            
     else:
         # DEFAULT
-        subsetconfig = { 'subset': {'height': {'min': 0, 'max': 20}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99, 'max': -75}, 'variables': ['u-component_of_wind_height_above_ground', 'v-component_of_wind_height_above_ground'], 'output': 'fnmoc-amseas-forecast' }} 
+        subsetconfig = { 'subset': {'height': {'min': 0, 'max': 20}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99, 'max': -75}, 'variables': ['u-component_of_wind_height_above_ground', 'v-component_of_wind_height_above_ground'], 'output': 'gfs-winds-forecast' }} 
 
     forecastDate = (dt.datetime.today() - dt.timedelta(days=1)).strftime("%Y%m%d")
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     subset = remoteDataset[variables].isel(height_above_ground4=heights, lat=lats, lon=lons)
 
     # Escribir a disco el subconjunto seleccionado.
-    ncFilename=getSafeOutputFilename('gfs-surface-winds-forecast-' + forecastDate, 'nc')
+    ncFilename=getSafeOutputFilename(subsetconfig['subset']['output'] + forecastDate, 'nc')
     print ('OutputFilename : ' + ncFilename)
 
     try:
