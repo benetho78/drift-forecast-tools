@@ -45,3 +45,22 @@ Series procesadas, con el ultimo pronostico.
 
 
 
+## Uso
+
+ 1. Hacer una copia del archivo que define el subconjunto a descargar (`subset-sample-[amseas, gfs].yaml`) y modificar.
+ 2. Correr el script para descarga.
+
+**Ejemplo:**
+
+```
+$ cp subset-sample-amseas.yaml my-amseas-subset.yaml
+$ vim my-amseas-subset.yaml
+
+$ python bin/download-fnmoc-amseas-forecast-ncks.py -s my-amseas-subset.yaml
+...
+..
+
+# Este comando generar archivos netcdf con los datos del subcojunto solicitado.
+
+```
+ 
