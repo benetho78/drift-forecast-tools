@@ -1,0 +1,14 @@
+subset:
+  height:
+    min: 0
+    max: 20
+  latitude:
+    min: 14.26
+    max: 32.28
+  longitude:
+    min: -97.99
+    max: -75
+  variables:
+    - "u-component_of_wind_height_above_ground"
+    - "v-component_of_wind_height_above_ground"
+  output: "gfs-winds-forecast"

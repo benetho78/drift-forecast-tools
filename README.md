@@ -31,3 +31,17 @@ https://www.ncei.noaa.gov/thredds-coastal/catalog/amseas/catalog.html
 Carpeta con pronostico: amseas_20201218_to_current/ 
 
 
+**Global Forecast System**
+
+Pronostico global climatico, para una docena de atmosferas, con variables como temperatura, precipitacion
+vientos, concentración de ozono, entre otras.  El sistema acopla cuatro modelos para mostrar de forma mas fiel las 
+condiciones climaticas.
+
+Servidor thredds UCAR
+https://thredds.ucar.edu/thredds/catalog/grib/NCEP/GFS/Global_0p25deg/catalog.html?dataset=grib/NCEP/GFS/Global_0p25deg/Best
+
+Series procesadas, con el ultimo pronostico.
+
+
+
+

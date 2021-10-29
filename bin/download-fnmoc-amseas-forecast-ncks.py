@@ -73,8 +73,12 @@ def makeCFCompliant(ncFile):
     dst.variables['time'].standard_name = 'time'
 
     # Variables standard_names
-    dst.variables['water_u'].standard_name = 'x_sea_water_velocity'
-    dst.variables['water_v'].standard_name = 'y_sea_water_velocity'
+    if 'water_u' in dst.variables:
+        dst.variables['water_u'].standard_name = 'x_sea_water_velocity'
+    if 'water_v' in dst.variables:
+        dst.variables['water_v'].standard_name = 'y_sea_water_velocity'
+    if 'water_temp' in dst.variables:
+        dst.variables['water_temp'].standard_name = 'sea_water_temperature'        
 
     dst.close()
 

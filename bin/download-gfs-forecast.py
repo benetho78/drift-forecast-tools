@@ -48,8 +48,10 @@ def makeCFCompliant(dst):
     dst.coords['time'].attrs['axis'] = 'T'
     dst.coords['time'].attrs['standard_name'] = 'time'
 
-    dst.variables['u-component_of_wind_height_above_ground'].attrs['standard_name'] = 'x_wind'
-    dst.variables['v-component_of_wind_height_above_ground'].attrs['standard_name'] = 'y_wind'
+    if 'u-component_of_wind_height_above_ground' in dst.variables:
+        dst.variables['u-component_of_wind_height_above_ground'].attrs['standard_name'] = 'x_wind'
+    if 'v-component_of_wind_height_above_ground' in dst.variables:
+        dst.variables['v-component_of_wind_height_above_ground'].attrs['standard_name'] = 'y_wind'
     return dst
 
 
@@ -86,7 +88,7 @@ if __name__ == "__main__":
     subset = remoteDataset[variables].isel(height_above_ground4=heights, lat=lats, lon=lons)
 
     # Escribir a disco el subconjunto seleccionado.
-    ncFilename=getSafeOutputFilename(subsetconfig['subset']['output'] + forecastDate, 'nc')
+    ncFilename=getSafeOutputFilename(subsetconfig['subset']['output'] + '-' + forecastDate, 'nc')
     print ('OutputFilename : ' + ncFilename)
 
     try:
