@@ -6,8 +6,8 @@ subset:
     min: 14.26
     max: 32.28
   longitude:
-    min: -97.99
-    max: -75
+    min: 262.01
+    max: 285
   variables:
     - "water_u"
     - "water_v"
