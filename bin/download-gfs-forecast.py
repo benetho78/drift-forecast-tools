@@ -8,6 +8,7 @@ import yaml
 import datetime as dt
 from dask.diagnostics import ProgressBar
 import argparse
+import pandas as pd
 
 def getNearestIdxSlice(min, max, arr):
     return slice((np.abs(arr - min)).argmin(), (np.abs(arr - max)).argmin())
@@ -48,17 +49,14 @@ def makeCFCompliant(dst):
     dst.coords['time'].attrs['axis'] = 'T'
     dst.coords['time'].attrs['standard_name'] = 'time'
 
-    if 'u-component_of_wind_height_above_ground' in dst.variables:
-        dst.variables['u-component_of_wind_height_above_ground'].attrs['standard_name'] = 'x_wind'
-    if 'v-component_of_wind_height_above_ground' in dst.variables:
-        dst.variables['v-component_of_wind_height_above_ground'].attrs['standard_name'] = 'y_wind'
+    dst.variables['u-component_of_wind_height_above_ground'].attrs['standard_name'] = 'x_wind'
+    dst.variables['v-component_of_wind_height_above_ground'].attrs['standard_name'] = 'y_wind'
     return dst
 
 
 if __name__ == "__main__":
 
-
-    parser = argparse.ArgumentParser(description='Parallel download for the FNMOC Amseas forecast', prog='download-fnmoc-amseas-forecast')
+    parser = argparse.ArgumentParser(description='Download for the GFS', prog='download-gfs-forecast')
     parser.add_argument('--subset', '-s', action='store', dest='subsetconfig', help='yaml file with the subset to download.')
 
     args = parser.parse_args()
@@ -73,7 +71,15 @@ if __name__ == "__main__":
         # DEFAULT
         subsetconfig = { 'subset': {'height': {'min': 0, 'max': 20}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99, 'max': -75}, 'variables': ['u-component_of_wind_height_above_ground', 'v-component_of_wind_height_above_ground'], 'output': 'gfs-winds-forecast' }} 
 
-    forecastDate = (dt.datetime.today() - dt.timedelta(days=1)).strftime("%Y%m%d")
+    if subsetconfig['subset']['period']['sdate'] == None:
+        forecastDate = (dt.datetime.today() - dt.timedelta(days=1)).strftime("%Y%m%d")
+    else:
+        sdate=subsetconfig['subset']['period']['sdate']
+        edate=subsetconfig['subset']['period']['edate']
+        sdate = dt.datetime(int(sdate[0:4]), int(sdate[4:6]), int(sdate[6:8]))
+        edate = dt.datetime(int(edate[0:4]), int(edate[4:6]), int(edate[6:8]))
+        forecastDate = pd.date_range(sdate,edate).strftime("%Y%m%d")
+
 
     print ('Opening remote GFS Dataset')
     remoteDataset = makeCFCompliant(getGFSDataArray())
@@ -83,19 +89,21 @@ if __name__ == "__main__":
     print (heights)
     lats   = getNearestIdxSlice(subsetconfig['subset']['latitude']['max'], subsetconfig['subset']['latitude']['min'], remoteDataset.coords['lat'].values) 
     lons   = getNearestIdxSlice(subsetconfig['subset']['longitude']['min'], subsetconfig['subset']['longitude']['max'], remoteDataset.coords['lon'].values)
-    variables = subsetconfig['subset']['variables']
+    # variables = subsetconfig['subset']['variables']
+    variables = subsetconfig['subset']['variablesGFS']
 
     subset = remoteDataset[variables].isel(height_above_ground4=heights, lat=lats, lon=lons)
 
     # Escribir a disco el subconjunto seleccionado.
-    ncFilename=getSafeOutputFilename(subsetconfig['subset']['output'] + '-' + forecastDate, 'nc')
+    # ncFilename=getSafeOutputFilename(subsetconfig['subset']['output'] + forecastDate, 'nc')
+    ncFilename=getSafeOutputFilename(subsetconfig['subset']['outdir'] + 'gfs-winds/' + 'gfs-winds-' + subsetconfig['subset']['output'] + '-' + forecastDate, 'nc')    
     print ('OutputFilename : ' + ncFilename)
 
     try:
-        delayedDownload = xr.save_mfdataset([subset], ['./' + ncFilename], mode='w', compute=False, engine='h5netcdf')
+        delayedDownload = xr.save_mfdataset([subset], [ncFilename], mode='w', compute=False, engine='h5netcdf')
     except:
         print('h5netcdf package not installed, recommended for improved netcdf writing')
-        delayedDownload = xr.save_mfdataset([subset], ['./' + ncFilename], mode='w', compute=False, engine='netcdf4')
+        delayedDownload = xr.save_mfdataset([subset], [ncFilename], mode='w', compute=False, engine='netcdf4')
 
     with ProgressBar():
         result = delayedDownload.compute()      

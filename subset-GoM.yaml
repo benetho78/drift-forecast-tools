@@ -1,0 +1,28 @@
+subset:
+  depth:
+    min: 0
+    max: 5000
+  latitude:
+    min: 14.26
+    max: 32.28
+  longitude:
+    min: -97.99
+    max: -75.00
+  period:
+    sdate:
+    edate:
+  variables:
+    - "water_u"
+    - "water_v"
+    - "water_temp"
+    - "salinity"
+  height:
+    min: 0
+    max: 20
+  variablesGFS:
+    -  "u-component_of_wind_height_above_ground"
+    -  "v-component_of_wind_height_above_ground"
+  output: "forecast-GoM"
+  outdir: "/home/jcerda/Python/TAMOC_input_files/data/"
+  
+  # outdir: "/LUSTRE/driftruns/TAMOC_input_files/data/"
