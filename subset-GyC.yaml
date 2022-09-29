@@ -3,14 +3,14 @@ subset:
     min: 0
     max: 5000
   latitude:
-    min: 14.26
+    min: 9.00
     max: 32.28
   longitude:
     min: -97.99
     max: -75.00
   period:
-    sdate: '20220905'
-    edate: '20220905'
+    sdate:
+    edate:
   variables:
     - "water_u"
     - "water_v"
@@ -22,7 +22,8 @@ subset:
   variablesGFS:
     -  "u-component_of_wind_height_above_ground"
     -  "v-component_of_wind_height_above_ground"
-  output: "forecast-GoM"
+  output: "forecast-GyC"
   outdir: "/home/jcerda/Python/TAMOC_input_files/data/"
-  
-  # outdir: "/LUSTRE/driftruns/TAMOC_input_files/data/"
+
+#  outdir: "/LUSTRE/driftruns/TAMOC_input_files/data/"
+ 

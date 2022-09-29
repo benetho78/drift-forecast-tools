@@ -24,8 +24,12 @@ def getSafeOutputFilename(proposedFilename, fextension='nc', count=0):
         return proposedFilename + '.' + fextension
 
 def getGFSDataArray(chunks={'time' : 1}):
+    # dst = xr.open_dataset('https://thredds.ucar.edu/thredds/dodsC/grib/NCEP/GFS/Global_0p25deg/Best',
+    #                       chunks=chunks, decode_times=False)
     dst = xr.open_dataset('https://thredds.ucar.edu/thredds/dodsC/grib/NCEP/GFS/Global_0p25deg/Best',
-                          chunks=chunks, decode_times=False)
+                          chunks=chunks)
+    # dst = xr.open_dataset('https://thredds-dev.unidata.ucar.edu/thredds/dodsC/grib/NCEP/GFS/Global_0p25deg/Best',
+    #                       chunks=chunks)
     return dst
 
 def makeCFCompliant(dst):
@@ -43,8 +47,8 @@ def makeCFCompliant(dst):
     dst.coords['lat'].attrs['standard_name'] = 'latitude'
     dst.coords['lat'].attrs['units'] = 'degrees_north'
 
-    dst.coords['height_above_ground4'].attrs['axis'] = 'Z'
-    dst.coords['height_above_ground4'].attrs['standard_name'] = 'depth'
+    dst.coords['height_above_ground2'].attrs['axis'] = 'Z'
+    dst.coords['height_above_ground2'].attrs['standard_name'] = 'depth'
 
     dst.coords['time'].attrs['axis'] = 'T'
     dst.coords['time'].attrs['standard_name'] = 'time'
@@ -85,14 +89,14 @@ if __name__ == "__main__":
     remoteDataset = makeCFCompliant(getGFSDataArray())
 
     # Subset definition
-    heights = getNearestIdxSlice(subsetconfig['subset']['height']['min'], subsetconfig['subset']['height']['max'], remoteDataset.coords['height_above_ground4'].values) 
+    heights = getNearestIdxSlice(subsetconfig['subset']['height']['min'], subsetconfig['subset']['height']['max'], remoteDataset.coords['height_above_ground2'].values) 
     print (heights)
     lats   = getNearestIdxSlice(subsetconfig['subset']['latitude']['max'], subsetconfig['subset']['latitude']['min'], remoteDataset.coords['lat'].values) 
     lons   = getNearestIdxSlice(subsetconfig['subset']['longitude']['min'], subsetconfig['subset']['longitude']['max'], remoteDataset.coords['lon'].values)
     # variables = subsetconfig['subset']['variables']
     variables = subsetconfig['subset']['variablesGFS']
 
-    subset = remoteDataset[variables].isel(height_above_ground4=heights, lat=lats, lon=lons)
+    subset = remoteDataset[variables].isel(height_above_ground2=heights, lat=lats, lon=lons)
 
     # Escribir a disco el subconjunto seleccionado.
     # ncFilename=getSafeOutputFilename(subsetconfig['subset']['output'] + forecastDate, 'nc')

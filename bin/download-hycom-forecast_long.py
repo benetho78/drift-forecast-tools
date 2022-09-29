@@ -30,8 +30,12 @@ def getSafeOutputFilename(proposedFilename, fextension='nc', count=0):
         return proposedFilename + '.' + fextension
 
 def getGFSDataArray(chunks={'time' : 1}):
-    dst = xr.open_dataset('https://tds.hycom.org/thredds/dodsC/GOMu0.04/expt_90.1m000/FMRC/GOMu0.04_901m000_FMRC_best.ncd',
+    # FORECAST + HINDCAST 2022
+    dst = xr.open_dataset('https://tds.hycom.org/thredds/dodsC/GOMu0.04/expt_90.1m000/data/hindcasts/2022',
                           chunks=chunks, decode_times=False)
+    # # FORECAST BEST
+    # dst = xr.open_dataset('https://tds.hycom.org/thredds/dodsC/GOMu0.04/expt_90.1m000/FMRC/GOMu0.04_901m000_FMRC_best.ncd',
+    #                       chunks=chunks, decode_times=False)
     # dst = xr.open_dataset('https://tds.hycom.org/thredds/dodsC/GOMu0.04/expt_90.1m000/FMRC/GOMu0.04_901m000_FMRC_best.ncd',
     #                       chunks=chunks)
     return dst
@@ -84,15 +88,15 @@ if __name__ == "__main__":
     #     # DEFAULT
     #     subsetconfig = { 'subset': {'height': {'min': 0, 'max': 20}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99, 'max': -75}, 'variables': ['u-component_of_wind_height_above_ground', 'v-component_of_wind_height_above_ground'], 'output': 'gfs-winds-forecast' }} 
 
-    # if subsetconfig['subset']['period']['sdate'] == None:
-    forecastDate = (dt.datetime.today() - dt.timedelta(days=1)).strftime("%Y%m%d")
-    fDate = (dt.datetime.today().replace(microsecond=0, second=0, minute=0, hour=0) - dt.timedelta(days=1))
-    # else:
-    #     sdate=subsetconfig['subset']['period']['sdate']
-    #     edate=subsetconfig['subset']['period']['edate']
-    #     sdate = dt.datetime(int(sdate[0:4]), int(sdate[4:6]), int(sdate[6:8]))
-    #     edate = dt.datetime(int(edate[0:4]), int(edate[4:6]), int(edate[6:8]))
-    #     forecastDate = pd.date_range(sdate,edate).strftime("%Y%m%d")
+    if subsetconfig['subset']['period']['sdate'] == None:
+        forecastDate = (dt.datetime.today() - dt.timedelta(days=1)).strftime("%Y%m%d")
+        sdate = (dt.datetime.today().replace(microsecond=0, second=0, minute=0, hour=0) - dt.timedelta(days=1))
+    else:
+        sdate=subsetconfig['subset']['period']['sdate']
+        edate=subsetconfig['subset']['period']['edate']
+        sdate = dt.datetime(int(sdate[0:4]), int(sdate[4:6]), int(sdate[6:8]))
+        edate = dt.datetime(int(edate[0:4]), int(edate[4:6]), int(edate[6:8]))
+        forecastDate = pd.date_range(sdate,edate).strftime("%Y%m%d")
 
 
     print ('Opening remote HYCOM Dataset')
@@ -100,27 +104,31 @@ if __name__ == "__main__":
 
     # Subset definition
     heights = getNearestIdxSlice(subsetconfig['subset']['depth']['min'], subsetconfig['subset']['depth']['max'], remoteDataset.coords['depth'].values) 
-    print (heights)
+    # print (heights)
     lats   = getNearestIdxSlice(subsetconfig['subset']['latitude']['min'], subsetconfig['subset']['latitude']['max'], remoteDataset.coords['lat'].values) 
     lons   = getNearestIdxSlice(subsetconfig['subset']['longitude']['min'], subsetconfig['subset']['longitude']['max'], remoteDataset.coords['lon'].values)
 
-    fD = cftime.DatetimeGregorian(fDate.year, fDate.month, fDate.day, fDate.hour)
+    fD = cftime.DatetimeGregorian(sdate.year, sdate.month, sdate.day, sdate.hour)
     # times=slice((remoteDataset.coords['time'].values == fD).argmax(), len(remoteDataset.coords['time']))
     t0 = (remoteDataset.coords['time'].values == fD).argmax()
-    # # Solo 24 hrs
-    # t1 = t0 + (24*1)
-    # Desde el dia de antier hasta el ultimo dia de forecast
-    t1 = remoteDataset.coords['time'].size
+    try:
+        eD = cftime.DatetimeGregorian(edate.year, edate.month, edate.day, edate.hour)
+        t1 = (abs(remoteDataset.coords['time'].values - eD)).argmin()
+    except:
+        # # Solo 24 hrs
+        # t1 = t0 + (24*1)
+        # Hasta el ultimo dia de forecast
+        t1 = remoteDataset.coords['time'].size
     times=slice(t0, t1)
     
     variables = subsetconfig['subset']['variables']
 
     # subset = remoteDataset[variables].isel(time=times, depth=heights, lat=lats, lon=lons)
-    subset = remoteDataset[variables].isel(depth=heights, lat=lats, lon=lons)
+    subset = remoteDataset[variables].isel(depth=heights, lat=lats, lon=lons, time=times)
 
     # Escribir a disco el subconjunto seleccionado.
     # ncFilename=getSafeOutputFilename(subsetconfig['subset']['output'] + forecastDate, 'nc')
-    ncFilename=getSafeOutputFilename(subsetconfig['subset']['outdir'] + 'hycom/' + 'HYCOM-' + subsetconfig['subset']['output'] + '-' + forecastDate, 'nc')
+    ncFilename=getSafeOutputFilename(subsetconfig['subset']['outdir'] + 'hycom/' + 'HYCOM-' + subsetconfig['subset']['output'] + '-' + forecastDate[0], 'nc')
     print ('OutputFilename : ' + ncFilename)
 
     try:

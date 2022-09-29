@@ -39,6 +39,15 @@ def buildNCKSDownload(dapURL, subsetConfig, outfile):
              '-d', "depth,{minX},{maxX}".format(maxX=subsetConfig['depth']['max'], minX=subsetConfig['depth']['min']),
              dapURL, outfile ]
 
+# def values2NearestIdx(dapURL, subsetconfig):
+#     dst = nc.Dataset(dapURL)
+#     subsetconfig['latitude']['min'] = np.abs(dst.variables['lat'][:] - subsetconfig['latitude']['min']).argmin()
+#     subsetconfig['latitude']['max'] = np.abs(dst.variables['lat'][:] - subsetconfig['latitude']['max']).argmin()
+#     subsetconfig['longitude']['min'] = np.abs(dst.variables['lon'][:] - (subsetconfig['longitude']['min']+360)).argmin()
+#     subsetconfig['longitude']['max'] = np.abs(dst.variables['lon'][:] - (subsetconfig['longitude']['max']+360)).argmin()
+#     subsetconfig['depth']['min'] = np.abs(dst.variables['depth'][:] - subsetconfig['depth']['min']).argmin()
+#     subsetconfig['depth']['max'] = np.abs(dst.variables['depth'][:] - subsetconfig['depth']['max']).argmin()    
+#     dst.close()
 def values2NearestIdx(dapURL, subsetconfig):
     dst = nc.Dataset(dapURL)
     subsetconfig['latitude']['min'] = np.abs(dst.variables['lat'][:] - subsetconfig['latitude']['min']).argmin()
@@ -101,7 +110,7 @@ if __name__ == "__main__":
     else:
         # DEFAULT
         subsetconfig = { 'subset': {'depth': {'min': 0, 'max': 5000}, 'latitude': {'min': 14.26, 'max': 32.28}, 'longitude': {'min': -97.99 + 360, 'max': -75 + 360}, 'variables': ['water_u', 'water_v'], 'output': 'fnmoc-amseas-forecast-JKb' }} 
-
+    subset0 = True
     # Check if only present day or period
     if subsetconfig['subset']['period']['sdate'] == None:
         # La fecha del pronostico a descagar, por defecto usar la fecha actual.
@@ -116,48 +125,54 @@ if __name__ == "__main__":
 
     # Download each day
     for fDate in forecastDate:
-        durls = getDapUrls(fDate)
-        # Multiple curl calls in parallel
+        try:
+            durls = getDapUrls(fDate)
+            
+            if subset0:
+                # Convert lat,lon values to its nearest index
+                values2NearestIdx(durls[0], subsetconfig['subset'])
+                subset0 = False
+        
+            print ("Parallel downloading" )
+            # outfiles = [ subsetconfig['subset']['output'] + '-' + forecastDate + '-time' + '{:02d}'.format(didx) + '.nc' for didx, dapURL in enumerate(durls) ] 
+            # outfiles = [subsetconfig['subset']['outdir'] + 'fnmoc-amseas-' + subsetconfig['subset']['output'] + '-' + forecastDate + '-time' + '{:02d}'.format(didx) + '.nc' for didx, dapURL in enumerate(durls) ]
+            os.makedirs(os.path.join(subsetconfig['subset']['outdir'],'ncom-amseas/',fDate), exist_ok=True)
+            # outfiles = [os.path.join(subsetconfig['subset']['outdir'],'fnmoc-amseas/',fDate) + '/fnmoc-amseas-' + subsetconfig['subset']['output'] + '-' + fDate + '-time' + '{:02d}'.format(didx) + '.nc' for didx, dapURL in enumerate(durls) ]
+            outfiles = [os.path.join(subsetconfig['subset']['outdir'],'ncom-amseas/',fDate) + '/ncom-amseas-' + subsetconfig['subset']['output'] + '-' + fDate + '-time' + dapURL[-10:-7] + '.nc' for didx, dapURL in enumerate(durls) ]
+            ncksCommands = [ buildNCKSDownload(dapURL, subsetconfig['subset'], outfiles[didx] ) for didx, dapURL in enumerate(durls) ] 
+        
+            if args.show_commands:
+                for cidx, c in enumerate(ncksCommands):
+                    print ( str(cidx) + " : " + " ".join(c) )
+                sys.exit(0)
+        
+            concurrentDownloads=4
+        
+            print("Number of downloads: " + str(len(ncksCommands)))
+            for i in range(0, len(ncksCommands), concurrentDownloads):
+        
+                print ("Batch " + str(i))
+                downloadProceses = []
+                for p in range(i, i+concurrentDownloads):
+                    if p >= len(ncksCommands):
+                        break
+                    print("Running p: " + str(p))
+                    downloadProceses.append ( Popen(ncksCommands[p]) )
+                    
+                # Wait for the downloading batch to finish.
+                for p in downloadProceses:
+                    p.wait()
+        
+                # Show if the download process went well
+                for pidx, p in enumerate(downloadProceses):
+                    print ("{} : {} : Return code: {}".format(pidx, ' '.join(ncksCommands[pidx]),  p.returncode))
+        
+                # Make downloaded files, CF Compliant
+                for pidx, p in enumerate(downloadProceses):
+                    print("Making CF Compliant: " + outfiles[i+pidx])
+                    makeCFCompliant(outfiles[i+pidx])
     
-        # Convert lat,lon values to its nearest index
-        values2NearestIdx(durls[0], subsetconfig['subset'])
-    
-        print ("Parallel downloading" )
-        # outfiles = [ subsetconfig['subset']['output'] + '-' + forecastDate + '-time' + '{:02d}'.format(didx) + '.nc' for didx, dapURL in enumerate(durls) ] 
-        # outfiles = [subsetconfig['subset']['outdir'] + 'fnmoc-amseas-' + subsetconfig['subset']['output'] + '-' + forecastDate + '-time' + '{:02d}'.format(didx) + '.nc' for didx, dapURL in enumerate(durls) ]
-        os.makedirs(os.path.join(subsetconfig['subset']['outdir'],'fnmoc-amseas/',fDate), exist_ok=True)
-        outfiles = [os.path.join(subsetconfig['subset']['outdir'],'fnmoc-amseas/',fDate) + '/fnmoc-amseas-' + subsetconfig['subset']['output'] + '-' + fDate + '-time' + '{:02d}'.format(didx) + '.nc' for didx, dapURL in enumerate(durls) ]
-        ncksCommands = [ buildNCKSDownload(dapURL, subsetconfig['subset'], outfiles[didx] ) for didx, dapURL in enumerate(durls) ] 
-    
-        if args.show_commands:
-            for cidx, c in enumerate(ncksCommands):
-                print ( str(cidx) + " : " + " ".join(c) )
-            sys.exit(0)
-    
-        concurrentDownloads=4
-    
-        print("Number of downloads: " + str(len(ncksCommands)))
-        for i in range(0, len(ncksCommands), concurrentDownloads):
-    
-            print ("Batch " + str(i))
-            downloadProceses = []
-            for p in range(i, i+concurrentDownloads):
-                if p >= len(ncksCommands):
-                    break
-                print("Running p: " + str(p))
-                downloadProceses.append ( Popen(ncksCommands[p]) )
-                
-            # Wait for the downloading batch to finish.
-            for p in downloadProceses:
-                p.wait()
-    
-            # Show if the download process went well
-            for pidx, p in enumerate(downloadProceses):
-                print ("{} : {} : Return code: {}".format(pidx, ' '.join(ncksCommands[pidx]),  p.returncode))
-    
-            # Make downloaded files, CF Compliant
-            for pidx, p in enumerate(downloadProceses):
-                print("Making CF Compliant: " + outfiles[i+pidx])
-                makeCFCompliant(outfiles[i+pidx])
-
-        print(fDate + ' downloaded sucessfully...')
+            print(fDate + ' downloaded sucessfully...')
+        except:
+            print(fDate + "Day doesn't exist")
+    del(ncksCommands, downloadProceses, p, outfiles, durls, fDate, i, subsetconfig)
